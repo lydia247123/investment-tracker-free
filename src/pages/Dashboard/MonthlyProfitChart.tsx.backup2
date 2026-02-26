@@ -1,0 +1,830 @@
+import { useMemo, useState, useEffect } from 'react';
+import { BarChart, ChartSeries } from '@components/charts/BarChart';
+import { LineChart } from '@components/charts/LineChart';
+import { InfoTooltip } from '@components/ui/InfoTooltip';
+import { useInvestmentStore } from '@store/investmentStore';
+import { usePreciousMetalStore } from '@store/preciousMetalStore';
+import { filterRecordsByDateRange } from '@utils/dataFilters';
+import { getAccountColors } from '@utils/chartColors';
+import {
+  calculateMonthlyReturnByAccount,
+  getAllUniqueMonthsFromReturnData,
+  alignReturnDataToMonths,
+  calculateMonthlyProfit
+} from '@utils/investmentCalculations';
+import { calculateTimeDepositProfitForMonth } from '@utils/timeDepositCalculations';
+import { calculateMonthlyAccumulatedProfit } from '@utils/metalCalculations';
+
+interface MonthlyProfitChartProps {
+  filterType?: 'all' | 'investment' | 'metal';
+  dateRange?: {
+    startMonth: string | null;
+    endMonth: string | null;
+  };
+}
+
+type ViewType = 'profit' | 'returnRate';
+
+export const MonthlyProfitChart = ({ filterType = 'all', dateRange }: MonthlyProfitChartProps) => {
+  // Derive includeMetal from filterType: include metals in 'all' and 'metal' modes, exclude in 'investment' mode
+  const includeMetal = filterType === 'all' || filterType === 'metal';
+
+  const { recordsByType } = useInvestmentStore();
+  const { recordsByMetalType } = usePreciousMetalStore();
+
+  // 视图类型状态（默认显示收益金额）
+  const [viewType, setViewType] = useState<ViewType>('profit');
+
+  // 账户选择状态（null表示"全部"模式）
+  const [selectedAccounts, setSelectedAccounts] = useState<Set<string> | null>(null);
+
+  // 数据计算
+  const chartData = useMemo(() => {
+    // ========== 处理普通投资数据 ==========
+    if (filterType === 'metal') {
+      // 贵金属模式：不涉及账户，返回 null
+      return null;
+    }
+
+    if (filterType === 'all' || filterType === 'investment') {
+      // 1. 收集所有记录（不应用日期过滤，在计算完成后再筛选）
+      const allRecords = Object.values(recordsByType).flat();
+      // 收集所有有快照的记录（排除定期存款，避免重复计算）
+      const snapshotRecords = allRecords.filter(r =>
+        r.snapshot !== undefined && !r.isTimeDeposit  // 排除定期存款
+      );
+
+      // 1.5. 收集定期存款记录
+      const timeDepositRecords = allRecords.filter(r =>
+        r.isTimeDeposit === true &&
+        r.depositTermMonths !== undefined &&
+        r.annualInterestRate !== undefined
+      );
+
+      if (snapshotRecords.length === 0 && timeDepositRecords.length === 0) {
+        return { allData: [], allSeries: [], accountNames: [], isInvestment: true };
+      }
+
+      // 2. 按账户分组快照数据
+      const snapshotsByAccount = new Map<string, Array<{ date: string; snapshot: number }>>();
+
+      snapshotRecords.forEach(record => {
+        if (!snapshotsByAccount.has(record.account)) {
+          snapshotsByAccount.set(record.account, []);
+        }
+        snapshotsByAccount.get(record.account)!.push({
+          date: record.date,
+          snapshot: record.snapshot!
+        });
+      });
+
+      // 3. 对每个账户的快照按日期排序
+      snapshotsByAccount.forEach((snapshots) => {
+        snapshots.sort((a, b) => a.date.localeCompare(b.date));
+      });
+
+      // 4. 计算每个账户的月度收益
+      const accountProfits = new Map<string, Map<string, number>>();
+
+      snapshotsByAccount.forEach((snapshots, account) => {
+        const profits = new Map<string, number>();
+
+        // 遍历每个月（从第二个快照开始，因为需要上月快照）
+        for (let i = 1; i < snapshots.length; i++) {
+          const currentSnapshot = snapshots[i];
+          const previousSnapshot = snapshots[i - 1];
+
+          // 计算当月该账户的普通投资金额（排除定期存款）
+          // 定期存款的收益会单独计算并累加，所以这里不应该包含定期存款本金
+          const currentMonthInvestment = allRecords
+            .filter(r => r.account === account && r.date === currentSnapshot.date && !r.isTimeDeposit)
+            .reduce((sum, r) => sum + r.amount, 0);
+
+          // 正确公式：当月收益 = (当月快照 - 上月快照) - 当月投资金额
+          // 不检查月份是否连续，与投资跟踪页面保持一致
+          const profit = (currentSnapshot.snapshot - previousSnapshot.snapshot) - currentMonthInvestment;
+          profits.set(currentSnapshot.date, profit);
+
+          // 调试日志：验证收益计算
+          if (currentSnapshot.date === '2025-06') {
+            console.log(`🔍【${account}账户 2025年6月快照收益计算】`);
+            console.log('-----------------------------------');
+            console.log(`当月快照:   ¥${currentSnapshot.snapshot.toFixed(2)}`);
+            console.log(`上月快照:   ¥${previousSnapshot.snapshot.toFixed(2)}`);
+            console.log(`快照差值:   ¥${(currentSnapshot.snapshot - previousSnapshot.snapshot).toFixed(2)}`);
+            console.log(`当月普通投资: ¥${currentMonthInvestment.toFixed(2)} (已排除定期存款)`);
+            console.log(`快照收益:   ¥${profit.toFixed(2)}`);
+            console.log('-----------------------------------');
+          }
+        }
+
+        accountProfits.set(account, profits);
+      });
+
+      // 5. 提取所有唯一月份并排序
+      const allMonths = new Set<string>();
+      accountProfits.forEach((profits) => {
+        profits.forEach((_, month) => allMonths.add(month));
+      });
+      const sortedMonths = Array.from(allMonths).sort();
+
+      // 5.5. 计算定期存款的月度收益（按账户分组）
+      const timeDepositProfits = new Map<string, number>(); // key: "month|account", value: profit
+
+      if (timeDepositRecords.length > 0) {
+        timeDepositRecords.forEach(record => {
+          const account = record.account;
+
+          // 为每个月份计算定期存款的利息收益
+          sortedMonths.forEach(month => {
+            const monthlyProfit = calculateTimeDepositProfitForMonth(record, month);
+
+            // 按账户和月份分组存储
+            const key = `${month}|${account}`;
+            const existingProfit = timeDepositProfits.get(key) || 0;
+            timeDepositProfits.set(key, existingProfit + monthlyProfit);
+          });
+        });
+      }
+
+      // 6. 获取账户名称（合并快照账户和定期存款账户）
+      const accountNamesFromSnapshots = Array.from(accountProfits.keys());
+
+      // 从定期存款利息中提取账户名称
+      const accountNamesFromTimeDeposits = new Set<string>();
+      timeDepositProfits.forEach((_, key) => {
+        // key格式："{month}|{account}"
+        const parts = key.split('|');
+        if (parts.length === 2) {
+          accountNamesFromTimeDeposits.add(parts[1]);
+        }
+      });
+
+      // 合并并去重
+      const accountNames = Array.from(
+        new Set([...accountNamesFromSnapshots, ...accountNamesFromTimeDeposits])
+      );
+
+      const colorMap = getAccountColors(accountNames);
+
+      // 7. 构建图表数据结构
+      const allData = sortedMonths.map(month => {
+        const dataPoint: { [key: string]: any } = {
+          name: month,
+          month
+        };
+
+        // 为每个账户计算收益（快照差值 + 定期存款利息）
+        accountNames.forEach(account => {
+          const snapshotProfit = accountProfits.get(account)?.get(month) || 0;
+          const key = `${month}|${account}`;
+          const timeDepositProfit = timeDepositProfits.get(key) || 0;
+          dataPoint[account] = snapshotProfit + timeDepositProfit;
+        });
+
+        return dataPoint;
+      });
+
+      // 【调试日志】打印 2025年6月的最终收益汇总
+      const june2025Data = allData.find(d => d.month === '2025-06');
+      if (june2025Data) {
+        console.log('');
+        console.log('🎯【Dashboard 2025年6月最终收益汇总】');
+        console.log('=====================================');
+        let totalProfit = 0;
+        let totalSnapshotProfit = 0;
+        let totalTimeDepositProfit = 0;
+
+        accountNames.forEach(account => {
+          const snapshotProfit = accountProfits.get(account)?.get('2025-06') || 0;
+          const key = `2025-06|${account}`;
+          const timeDepositProfit = timeDepositProfits.get(key) || 0;
+          const total = snapshotProfit + timeDepositProfit;
+
+          totalSnapshotProfit += snapshotProfit;
+          totalTimeDepositProfit += timeDepositProfit;
+          totalProfit += total;
+
+          if (total !== 0) {
+            console.log(`${account}:`);
+            console.log(`  - 快照收益: ${snapshotProfit.toFixed(2)}`);
+            console.log(`  - 定期存款利息: ${timeDepositProfit.toFixed(2)}`);
+            console.log(`  - 总收益: ${total.toFixed(2)}`);
+          }
+        });
+        console.log('-------------------------------------');
+        console.log(`快照收益总计: ${totalSnapshotProfit.toFixed(2)}`);
+        console.log(`定期存款利息总计: ${totalTimeDepositProfit.toFixed(2)}`);
+        console.log(`总收益: ${totalProfit.toFixed(2)}`);
+        console.log('=====================================');
+        console.log('');
+      }
+
+      // 【调试日志】打印 2025年1月的最终收益汇总
+      const january2025Data = allData.find(d => d.month === '2025-01');
+      if (january2025Data) {
+        console.log('');
+        console.log('🎯【Dashboard 2025年1月最终收益汇总】');
+        console.log('=====================================');
+        let totalProfit = 0;
+        let totalSnapshotProfit = 0;
+        let totalTimeDepositProfit = 0;
+
+        accountNames.forEach(account => {
+          const snapshotProfit = accountProfits.get(account)?.get('2025-01') || 0;
+          const key = `2025-01|${account}`;
+          const timeDepositProfit = timeDepositProfits.get(key) || 0;
+          const total = snapshotProfit + timeDepositProfit;
+
+          totalSnapshotProfit += snapshotProfit;
+          totalTimeDepositProfit += timeDepositProfit;
+          totalProfit += total;
+
+          if (total !== 0) {
+            console.log(`${account}:`);
+            console.log(`  - 快照收益: ${snapshotProfit.toFixed(2)}`);
+            console.log(`  - 定期存款利息: ${timeDepositProfit.toFixed(2)}`);
+            console.log(`  - 总收益: ${total.toFixed(2)}`);
+          }
+        });
+        console.log('-------------------------------------');
+        console.log(`快照收益总计: ${totalSnapshotProfit.toFixed(2)}`);
+        console.log(`定期存款利息总计: ${totalTimeDepositProfit.toFixed(2)}`);
+        console.log(`总收益: ${totalProfit.toFixed(2)}`);
+        console.log('=====================================');
+        console.log('');
+      }
+
+      // 【调试日志】打印纳斯达克账户月度收益率计算过程
+      if (accountNames.includes('纳斯达克')) {
+        console.log('');
+        console.log('📈【纳斯达克账户月度收益率计算过程】');
+        console.log('=====================================');
+        console.log('');
+
+        sortedMonths.forEach(month => {
+          // 获取当月快照数据
+          const snapshots = snapshotsByAccount.get('纳斯达克');
+          const currentIndex = snapshots?.findIndex(s => s.date === month);
+
+          if (currentIndex !== undefined && currentIndex > 0) {
+            const currentSnapshot = snapshots![currentIndex];
+            const previousSnapshot = snapshots![currentIndex - 1];
+
+            // 计算快照差值
+            const snapshotDiff = currentSnapshot.snapshot - previousSnapshot.snapshot;
+
+            // 计算当月投资金额
+            const monthInvestment = allRecords
+              .filter(r => r.account === '纳斯达克' && r.date === month)
+              .reduce((sum, r) => sum + r.amount, 0);
+
+            // 计算快照收益
+            const snapshotProfit = snapshotDiff - monthInvestment;
+
+            // 计算定期存款利息
+            const key = `${month}|纳斯达克`;
+            const timeDepositProfit = timeDepositProfits.get(key) || 0;
+
+            // 计算总收益
+            const totalProfit = snapshotProfit + timeDepositProfit;
+
+            // 计算收益率
+            const roi = monthInvestment !== 0 ? (totalProfit / monthInvestment) * 100 : 0;
+
+            // 打印简洁版计算过程
+            console.log(`📅 月份: ${month}`);
+            console.log(`-----------------------------------`);
+            console.log(`上月快照:   ¥${previousSnapshot.snapshot.toFixed(2)}`);
+            console.log(`当月快照:   ¥${currentSnapshot.snapshot.toFixed(2)}`);
+            console.log(`快照差值:   ¥${snapshotDiff.toFixed(2)}`);
+            console.log(`当月投资:   ¥${monthInvestment.toFixed(2)}`);
+            console.log(`快照收益:   ¥${snapshotProfit.toFixed(2)} (快照差值 - 当月投资)`);
+            console.log(`定期利息:   ¥${timeDepositProfit.toFixed(2)}`);
+            console.log(`当月总收益: ¥${totalProfit.toFixed(2)} (快照收益 + 定期利息)`);
+            console.log(`月度收益率: ${roi.toFixed(2)}% (当月总收益 / 当月投资 × 100%)`);
+            console.log('');
+          }
+        });
+
+        console.log('=====================================');
+        console.log('');
+      }
+
+      // 8. 构建系列配置
+      const allSeries: ChartSeries[] = accountNames.map(account => ({
+        dataKey: account,
+        name: account,
+        color: colorMap.get(account) || '#8b5cf6'
+      }));
+
+      // 辅助函数：按日期范围筛选已计算的数据
+      const filterDataByDateRange = (
+        data: Array<{ month: string; [key: string]: number | string }> | undefined
+      ) => {
+        // 如果数据为空或undefined，返回空数组
+        if (!data || data.length === 0) {
+          return [];
+        }
+
+        if (!dateRange.startMonth && !dateRange.endMonth) {
+          return data; // 无筛选，返回全部数据
+        }
+
+        return data.filter(item => {
+          const month = item.month;
+          const startCheck = !dateRange.startMonth || month >= dateRange.startMonth;
+          const endCheck = !dateRange.endMonth || month <= dateRange.endMonth;
+          return startCheck && endCheck;
+        });
+      };
+
+      // 在返回前应用日期筛选
+      const filteredAllData = filterDataByDateRange(allData);
+      const filteredAllSeries = allSeries.map(series => ({
+        ...series,
+        data: filterDataByDateRange(series.data)
+      }));
+
+      return {
+        allData: filteredAllData,
+        allSeries: filteredAllSeries,
+        accountNames,
+        isInvestment: true
+      };
+    }
+
+    return { allData: [], allSeries: [], accountNames: [], isInvestment: false };
+  }, [recordsByType, filterType, dateRange]);
+
+  // 收益率数据计算（复用AccountMonthlyReturnChart的逻辑）
+  const returnRateData = useMemo(() => {
+    // 贵金属模式：不涉及收益率
+    if (filterType === 'metal') {
+      return null;
+    }
+
+    // 普通投资模式：计算月度收益率
+    if (filterType === 'all' || filterType === 'investment') {
+      // 过滤记录
+      const filteredRecordsByType: { [key: string]: any[] } = {};
+      Object.entries(recordsByType).forEach(([type, records]) => {
+        filteredRecordsByType[type] = filterRecordsByDateRange(
+          records,
+          dateRange || { startMonth: null, endMonth: null }
+        );
+      });
+
+      // 计算每个账户的月度收益率
+      const returnDataByAccount = calculateMonthlyReturnByAccount(filteredRecordsByType);
+
+      // 如果没有账户数据
+      if (returnDataByAccount.length === 0) {
+        return { series: [], data: [], accountNames: [], allData: null, colorMap: null };
+      }
+
+      // 获取所有唯一月份
+      let allMonths = getAllUniqueMonthsFromReturnData(returnDataByAccount);
+
+      // 应用日期范围过滤到月份
+      allMonths = allMonths.filter(month => {
+        if (dateRange?.startMonth && month < dateRange.startMonth) return false;
+        if (dateRange?.endMonth && month > dateRange.endMonth) return false;
+        return true;
+      });
+
+      // 获取账户颜色
+      const accountNames = returnDataByAccount.map(d => d.account);
+      const colorMap = getAccountColors(accountNames);
+
+      // 对齐每个账户的数据到统一的月份轴
+      const alignedData = returnDataByAccount.map(({ account, data }) => ({
+        account,
+        alignedReturn: alignReturnDataToMonths(data, allMonths)
+      }));
+
+      // 构建完整的图表数据结构（多线格式）
+      const allChartDataPoints = allMonths.map((month, monthIndex) => {
+        const dataPoint: { [key: string]: any } = {
+          name: month,
+          month
+        };
+
+        alignedData.forEach(({ account, alignedReturn }) => {
+          dataPoint[account] = alignedReturn[monthIndex]?.returnRate ?? null;
+        });
+
+        return dataPoint;
+      });
+
+      // 构建系列配置
+      const allSeries: ChartSeries[] = alignedData.map(({ account }) => ({
+        dataKey: account,
+        name: account,
+        color: colorMap.get(account) || '#8b5cf6'
+      }));
+
+      return {
+        allSeries,
+        allData: allChartDataPoints,
+        accountNames: alignedData.map(d => d.account),
+        colorMap
+      };
+    }
+
+    return { series: [], data: [], accountNames: [], allData: null, colorMap: null };
+  }, [recordsByType, filterType, dateRange]);
+
+  // ========== 处理贵金属投资数据（单系列模式）==========
+  const metalChartData = useMemo(() => {
+    if (filterType === 'all' || filterType === 'metal') {
+      // 收集所有记录（不应用日期过滤，在计算完成后再筛选）
+      const allMetalRecords = Object.values(recordsByMetalType).flat();
+
+      if (allMetalRecords.length === 0) {
+        return [];
+      }
+
+      const uniqueMonths = new Set(allMetalRecords.map(r => r.date));
+      const sortedMonths = Array.from(uniqueMonths).sort((a, b) => a.localeCompare(b));
+
+      // ✅ 无论 'all' 还是 'metal'，都计算并返回贵金属收益数据
+      // 先计算所有月度收益
+      const allMetalData = sortedMonths.map((month) => {
+        // 按贵金属类型分组记录
+        const recordsByType: { [metalType: string]: typeof allMetalRecords } = {};
+        allMetalRecords.forEach(record => {
+          if (!recordsByType[record.metalType]) {
+            recordsByType[record.metalType] = [];
+          }
+          recordsByType[record.metalType].push(record);
+        });
+
+        // 贵金属月均收益 = 当月均价×当月累计购买克数-上月均价×上月累计购买克数-当月投资金额
+        // 使用统一的计算函数
+        const monthlyProfits = calculateMonthlyAccumulatedProfit(recordsByType, month);
+
+        // 计算所有贵金属的单月收益总和
+        const totalProfit = Object.values(monthlyProfits).reduce((sum, profit) => sum + profit, 0);
+
+        return {
+          label: month,
+          value: totalProfit
+        };
+      });
+
+      // 辅助函数：按日期范围筛选贵金属数据
+      const filterMetalDataByDateRange = (
+        data: Array<{ label: string; value: number }>
+      ) => {
+        if (!data || data.length === 0) {
+          return [];
+        }
+
+        if (!dateRange.startMonth && !dateRange.endMonth) {
+          return data; // 无筛选，返回全部数据
+        }
+
+        return data.filter(item => {
+          const month = item.label;
+          const startCheck = !dateRange.startMonth || month >= dateRange.startMonth;
+          const endCheck = !dateRange.endMonth || month <= dateRange.endMonth;
+          return startCheck && endCheck;
+        });
+      };
+
+      // 在返回前应用日期筛选
+      return filterMetalDataByDateRange(allMetalData);
+    }
+
+    return [];
+  }, [recordsByMetalType, filterType, dateRange]);
+
+  // 初始化选中账户（根据视图类型设置默认值）
+  useEffect(() => {
+    if (viewType === 'profit' && chartData?.accountNames && chartData.accountNames.length > 0) {
+      // 收益金额视图：默认为null（显示全部账户总收益）
+      setSelectedAccounts(null);
+    } else if (viewType === 'returnRate' && returnRateData?.accountNames && returnRateData.accountNames.length > 0) {
+      // 收益率视图：默认选中所有账户
+      setSelectedAccounts(new Set(returnRateData.accountNames));
+    }
+  }, [viewType, chartData?.accountNames, returnRateData?.accountNames]);
+
+  // 根据视图类型和账户选择过滤数据
+  const filteredChartData = useMemo(() => {
+    // 收益金额视图
+    if (viewType === 'profit') {
+      if (!chartData || !chartData.allData || chartData.allData.length === 0) {
+        return { series: null, data: [] };
+      }
+
+      // 如果 selectedAccounts 为 null，表示"全部"模式，显示所有账户的总收益（单系列模式）
+      if (selectedAccounts === null) {
+        const aggregatedData = chartData.allData.map(monthData => {
+          // 1. 汇总所有账户的收益（已包括该账户的定期存款）
+          const totalProfit = chartData.accountNames.reduce((sum, account) => {
+            return sum + (monthData[account] || 0);
+          }, 0);
+
+          // 2. 加上贵金属收益（filterType='all' 且 includeMetal=true 时）
+          let metalProfit = 0;
+          if (filterType === 'all' && includeMetal && metalChartData.length > 0) {
+            // 从metalChartData中找到对应月份的贵金属收益
+            const metalData = metalChartData.find(d => d.label === monthData.month);
+            if (metalData) {
+              metalProfit = metalData.value;
+            }
+          }
+
+          const finalTotal = totalProfit + metalProfit;
+
+          return {
+            label: monthData.month,
+            value: finalTotal
+          };
+        });
+
+        return { series: null, data: aggregatedData, mode: 'all' as const };
+      }
+
+      // 有选中账户：显示分组柱状图（多系列模式）
+      const filteredSeries = chartData.allSeries.filter(s =>
+        selectedAccounts.has(s.name)
+      );
+
+      const filteredData = chartData.allData.map(monthData => {
+        const dataPoint: { [key: string]: any } = {
+          name: monthData.month
+        };
+
+        filteredSeries.forEach(series => {
+          // 【修改】直接使用账户的收益（已包括该账户的定期存款）
+          dataPoint[series.dataKey] = monthData[series.dataKey] || 0;
+        });
+
+        return dataPoint;
+      });
+
+      return {
+        series: filteredSeries,
+        data: filteredData,
+        selectedCount: selectedAccounts.size,
+        totalCount: chartData.accountNames.length,
+        mode: 'filtered' as const
+      };
+    }
+
+    // 收益率视图
+    if (viewType === 'returnRate') {
+      if (!returnRateData || !returnRateData.allData || !returnRateData.allSeries) {
+        return { series: [], data: [] };
+      }
+
+      // 如果没有选中任何账户，显示所有账户
+      const accountsToShow = selectedAccounts && selectedAccounts.size > 0
+        ? selectedAccounts
+        : new Set(returnRateData.accountNames);
+
+      // 过滤系列配置
+      const filteredSeries = returnRateData.allSeries.filter(s =>
+        accountsToShow.has(s.name)
+      );
+
+      // 过滤数据点
+      const filteredData = returnRateData.allData.map(dataPoint => {
+        const filteredPoint: { [key: string]: any } = {
+          name: dataPoint.name,
+          month: dataPoint.month
+        };
+
+        filteredSeries.forEach(series => {
+          filteredPoint[series.dataKey] = dataPoint[series.dataKey];
+        });
+
+        return filteredPoint;
+      });
+
+      return {
+        series: filteredSeries,
+        data: filteredData,
+        selectedCount: accountsToShow.size,
+        totalCount: returnRateData.accountNames.length
+      };
+    }
+
+    return { series: [], data: [] };
+  }, [viewType, chartData, returnRateData, selectedAccounts, metalChartData, filterType, includeMetal]);
+
+  // ========== 渲染逻辑 ==========
+  // 贵金属模式或混合模式（有贵金属数据）
+  if ((filterType === 'metal' || (filterType === 'all' && metalChartData.length > 0)) &&
+      (!chartData || !chartData.isInvestment)) {
+    return (
+      <div className="bg-white rounded-xl p-4 shadow-lg">
+        {metalChartData.length > 0 ? (
+          <BarChart
+            data={metalChartData}
+            height={280}
+            title={
+              <>
+                📈 月度投资收益
+                <InfoTooltip content="月均收益 = 当月均价×当月累计购买克数-上月均价×上月累计购买克数-当月投资金额" />
+              </>
+            }
+            yLabel="收益金额 (¥)"
+            xLabel="月份"
+          />
+        ) : (
+          <div className="text-center py-12 text-gray-500">
+            暂无贵金属数据，请添加贵金属投资记录
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // 普通投资模式
+  if (!chartData || !chartData.allData || chartData.allData.length === 0) {
+    return (
+      <div className="bg-white rounded-xl p-4 shadow-lg">
+        <div className="text-center py-12 text-gray-500">
+          暂无快照数据，请添加带有快照金额的投资记录
+        </div>
+      </div>
+    );
+  }
+
+  // 处理账户选择
+  const handleAccountToggle = (accountName: string) => {
+    setSelectedAccounts(prev => {
+      // 如果当前是"全部"模式，切换到选中该账户
+      if (prev === null) {
+        return new Set([accountName]);
+      }
+
+      // 否则正常切换
+      const newSet = new Set(prev);
+      if (newSet.has(accountName)) {
+        // 如果只剩1个选中，取消时切换回"全部"模式
+        if (newSet.size > 1) {
+          newSet.delete(accountName);
+        } else {
+          return null;  // 返回"全部"模式
+        }
+      } else {
+        newSet.add(accountName);
+      }
+      return newSet;
+    });
+  };
+
+  // 点击"全部"按钮，切换到"全部"模式
+  const handleShowAll = () => {
+    setSelectedAccounts(null);
+  };
+
+  // 渲染普通投资图表
+  return (
+    <div className="bg-white rounded-xl p-4 shadow-lg">
+      {/* 视图类型选择器 */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          显示内容：
+        </label>
+        <select
+          value={viewType}
+          onChange={(e) => setViewType(e.target.value as ViewType)}
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+        >
+          <option value="profit">收益金额</option>
+          <option value="returnRate">收益率</option>
+        </select>
+      </div>
+
+      {/* 账户选择器 */}
+      {((viewType === 'profit' && chartData?.accountNames && chartData.accountNames.length > 1) ||
+        (viewType === 'returnRate' && returnRateData?.accountNames && returnRateData.accountNames.length > 1)) && (
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-sm font-medium text-gray-700">选择账户显示：</span>
+            {/* "全部"按钮 - 仅在收益金额视图显示 */}
+            {viewType === 'profit' && (
+              <button
+                onClick={handleShowAll}
+                className={`
+                  px-3 py-1.5 rounded-full text-xs font-medium transition-all
+                  ${selectedAccounts === null
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }
+                `}
+              >
+                全部
+                {selectedAccounts === null && <span className="ml-1">✓</span>}
+              </button>
+            )}
+          </div>
+          {/* 账户按钮列表 */}
+          <div className="flex flex-wrap gap-2">
+            {(viewType === 'profit' ? chartData.allSeries : returnRateData?.allSeries)?.map((series) => {
+              const isSelected = selectedAccounts !== null && selectedAccounts.has(series.name);
+              return (
+                <button
+                  key={series.name}
+                  onClick={() => handleAccountToggle(series.name)}
+                  className={`
+                    px-3 py-1.5 rounded-full text-xs font-medium transition-all
+                    ${isSelected
+                      ? 'text-white shadow-sm'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }
+                  `}
+                  style={{
+                    backgroundColor: isSelected ? series.color : undefined,
+                    opacity: isSelected ? 1 : 0.6
+                  }}
+                  title={series.name}
+                >
+                  {series.name}
+                  {isSelected && (
+                    <span className="ml-1">✓</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          {/* 状态提示 */}
+          <div className="mt-2 text-xs text-gray-500">
+            {viewType === 'profit' ? (
+              selectedAccounts === null
+                ? '显示全部账户总收益'
+                : selectedAccounts.size === chartData.accountNames.length
+                ? '已选择所有账户'
+                : `已选择 ${filteredChartData.selectedCount} / ${filteredChartData.totalCount} 个账户`
+            ) : (
+              `已选择 ${filteredChartData.selectedCount} / ${filteredChartData.totalCount} 个账户`
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 图表 - 根据视图类型渲染 */}
+      {viewType === 'profit' ? (
+        <BarChart
+          data={filteredChartData.data}
+          series={filteredChartData.series || undefined}
+          height={280}
+          title={
+            <span className="flex items-center justify-center">
+              📈 月度投资收益
+              <InfoTooltip
+                content={[
+                  '【收益金额计算公式】',
+                  '当月收益 = 当前资产 - 上月资产 - 当月投资金额',
+                  '',
+                  '说明：',
+                  '• 当前资产：当月快照金额（普通投资）+ 实际累计利息（定期存款）',
+                  '• 上月资产：上月快照金额（普通投资）+ 实际累计利息（定期存款）',
+                  '• 定期存款利息：按月精确计算，不使用平均值',
+                  '• 初始投资当月（账户第一个月）的收益为0'
+                ]}
+              />
+            </span>
+          }
+          yLabel="收益金额 (¥)"
+          xLabel="月份"
+        />
+      ) : (
+        <LineChart
+          data={filteredChartData.data}
+          series={filteredChartData.series || undefined}
+          height={280}
+          title={
+            <span className="flex items-center justify-center">
+              📈 账户月度收益率
+              <InfoTooltip
+                content={[
+                  '【月度收益率计算公式】',
+                  '收益率 = (当月收益 / 上月快照) × 100%',
+                  '',
+                  '说明：',
+                  '• 上月快照作为基准资产',
+                  '• 收益率反映投资效率',
+                  '• 只计算连续月份的数据'
+                ]}
+              />
+            </span>
+          }
+          yLabel="收益率 (%)"
+          xLabel="月份"
+          yAxisFormatter={(value) => `${value.toFixed(1)}%`}
+          tooltipFormatter={(value, name) => [
+            `收益率: ${(value ?? 0).toFixed(2)}%`,
+            name || ''
+          ]}
+        />
+      )}
+    </div>
+  );
+};

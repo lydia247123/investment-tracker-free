@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Window drag region configuration for macOS
+  - .drag-region: Areas where window can be dragged
+  - .no-drag: Areas where dragging is disabled (interactive elements)
+*/
+
+.drag-region {
+  -webkit-app-region: drag;
+}
+
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* Ensure interactive elements don't interfere with dragging */
+button,
+a,
+input,
+select,
+textarea,
+[role="button"],
+svg,
+canvas,
+.recharts-wrapper {
+  -webkit-app-region: no-drag;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  background-color: transparent; /* 允许圆角效果 */
+  -webkit-app-region: no-drag;
+}
+
+#root {
+  min-height: 100vh;
+}

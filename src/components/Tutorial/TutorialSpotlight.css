@@ -1,0 +1,42 @@
+/* 背景变暗层 */
+.tutorial-spotlight-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4); /* 降低不透明度，让背景更亮 */
+  z-index: 9998;
+  pointer-events: none;
+}
+
+/* 聚光灯挖空效果 */
+.tutorial-spotlight-cutout {
+  position: fixed;
+  background-color: transparent;
+  /* 使用 box-shadow 创建聚光灯效果：四周变暗，中间透明 */
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4), /* 降低背景不透明度 */
+              inset 0 0 20px rgba(109, 217, 138, 0.3); /* 添加内发光让选中区域更亮 */
+  border: 3px solid #6DD98A; /* 绿色边框作为额外强调 */
+  border-radius: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+  z-index: 9999;
+}
+
+.tutorial-spotlight-pulse {
+  animation: spotlightPulse 2s ease-in-out infinite;
+}
+
+@keyframes spotlightPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4),
+                inset 0 0 20px rgba(109, 217, 138, 0.3),
+                0 0 0 0px rgba(109, 217, 138, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4),
+                inset 0 0 30px rgba(109, 217, 138, 0.5),
+                0 0 0 8px rgba(109, 217, 138, 0.3);
+  }
+}

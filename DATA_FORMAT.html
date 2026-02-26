@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>投资跟踪器 - 数据库展示</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      font-size: 1.1em;
+      opacity: 0.9;
+    }
+
+    .content {
+      padding: 30px;
+    }
+
+    .table-section {
+      margin-bottom: 40px;
+    }
+
+    .section-title {
+      font-size: 1.8em;
+      color: #333;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 3px solid #667eea;
+    }
+
+    .storage-key {
+      background: #f0f4ff;
+      padding: 8px 15px;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      color: #667eea;
+      font-weight: bold;
+      display: inline-block;
+      margin-bottom: 15px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    thead {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    th {
+      padding: 15px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.95em;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    td {
+      padding: 12px 15px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    tbody tr:hover {
+      background: #f8f9ff;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .field-type {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.85em;
+      font-weight: 600;
+    }
+
+    .type-string { background: #e3f2fd; color: #1976d2; }
+    .type-number { background: #f3e5f5; color: #7b1fa2; }
+    .type-boolean { background: #fff3e0; color: #e65100; }
+    .type-array { background: #e8f5e9; color: #388e3c; }
+
+    .required {
+      color: #4caf50;
+      font-weight: bold;
+    }
+
+    .optional {
+      color: #ff9800;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.85em;
+      font-weight: 600;
+    }
+
+    .badge-example {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .example-box {
+      background: #f8f9fa;
+      border-left: 4px solid #667eea;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 4px;
+    }
+
+    .example-title {
+      font-weight: 600;
+      color: #667eea;
+      margin-bottom: 10px;
+      font-size: 0.95em;
+    }
+
+    pre {
+      background: #2d2d2d;
+      color: #f8f8f2;
+      padding: 15px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 0.9em;
+      line-height: 1.5;
+    }
+
+    .formula {
+      background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+      padding: 15px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-weight: 600;
+      text-align: center;
+      margin: 15px 0;
+      color: #2d3436;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin: 20px 0;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .stat-label {
+      font-size: 0.9em;
+      opacity: 0.9;
+      margin-bottom: 5px;
+    }
+
+    .stat-value {
+      font-size: 2em;
+      font-weight: bold;
+    }
+
+    .footer {
+      background: #f8f9fa;
+      padding: 20px;
+      text-align: center;
+      color: #666;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📊 投资跟踪器数据库</h1>
+      <p>LocalStorage 存储结构可视化展示</p>
+    </div>
+
+    <div class="content">
+      <!-- 数据库统计 -->
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-label">数据表数量</div>
+          <div class="stat-value">5</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">总字段数</div>
+          <div class="stat-value">47</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">关系类型</div>
+          <div class="stat-value">2</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">存储方式</div>
+          <div class="stat-value">JSON</div>
+        </div>
+      </div>
+
+      <!-- 1. investmentRecords -->
+      <div class="table-section">
+        <h2 class="section-title">1️⃣ 投资记录表 (investmentRecords)</h2>
+        <div class="storage-key">localStorage 键: investmentRecords</div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>字段名</th>
+              <th>类型</th>
+              <th>必填</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>id</td>
+              <td><span class="field-type type-string">string</span></td>
+              <td><span class="required">✓ 必填</span></td>
+              <td>唯一标识符</td>
+            </tr>
+            <tr>
+              <td>date</td>
+              <td><span class="field-type type-string">string</span></td>
+              <td><span class="required">✓ 必填</span></td>
+              <td>投资月份 (YYYY-MM格式)</td>
+            </tr>
+            <tr>
+              <td>amount</td>
+              <td><span class="field-type type-number">number</span></td>
+              <td><span class="required">✓ 必填</span></td>
+              <td>投资金额（统一人民币）</td>
+            </tr>
+            <tr>
+              <td>amountUSD</td>
+              <td><span class="field-type type-number">number</span></td>
+              <td><span class="optional">✗ 可选</span></td>
+              <td>原始美元金额</td>
+            </tr>
+            <tr>
+              <td>currency</td>
+              <td><span class="field-type type-string">string</span></td>
+              <td><span class="optional">✗ 可选</span></td>
+              <td>货币类型 ('CNY' | 'USD')</td>
+            </tr>
+            <tr>
+              <td>exchangeRate</td>
+              <td><span class="field-type type-number">number</span></td>
+              <td><span class="optional">✗ 可选</span></td>
+              <td>汇率（USD→CNY）</td>
+            </tr>
+            <tr>
+              <td>snapshot</td>
+              <td><span class="field-type type-number">number</span></td>
+              <td><span class="required">✓ 必填</span></td>
+              <td>资产快照（人民币）</td>
+            </tr>
+            <tr>
+              <td>snapshotUSD</td>
+              <td><span class="field-type type-number">number</span></td>
+              <td><span class="optional">✗ 可选</span></td>
+              <td>原始美元快照</td>
+            </tr>
+            <tr>
+              <td>account</td>
+              <td><span class="field-type type-string">string</span></td>
+              <td><span class="required">✓ 必填</span></td>
+              <td>账户名称（外键→accounts）</td>
+            </tr>
+            <tr>
+              <td>assetType</td>
+              <td><span class="field-type type-string">string</span></td>
+              <td><span class="required">✓ 必填</span></td>
+              <td>资产类型（分组键）</td>
+            </tr>
+            <tr>
+              <td>note</td>
+              <td><span class="field-type type-string">string</span></td>
+              <td><span class="optional">✗ 可选</span></td>
+              <td>备注信息</td>
+            </tr>
+            <tr>
+              <td>isTimeDeposit</td>
+              <td><span class="field-type type-boolean">boolean</span></td>
+              <td><span class="optional">✗ 可选</span></td>
+              <td>是否为定期存款</td>
+            </tr>
+            <tr>
+              <td>depositTermMonths</td>
+              <td><span class="field-type type-number">number</span></td>
+              <td><span class="optional">✗ 可选</span></td>
+              <td>存期（月数）</td>
+            </tr>
+            <tr>
+              <td>annualInterestRate</td>
+              <td><span class="field-type type-number">number</span></td>
+              <td><span class="optional">✗ 可选</span></td>
+              <td>年化利率（如5%填5）</td>
+            </tr>
+            <tr>
+              <td>maturityDate</td>
+              <td><span class="field-type type-string">string</span></td>
+              <td><span class="optional">✗ 可选</span></td>
+              <td>到期日期 (YYYY-MM)</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="example-box">
+          <div class="example-title">📝 数据示例</div>
+          <pre>{
+  "股票": [
+    {
+      "id": "1",
+      "date": "2024-01",
+      "amount": 1000,
+      "snapshot": 11200,
+      "account": "支付宝",
+      "note": "月定投",
+      "currency": "CNY",
+      "assetType": "股票"
+    }
+  ],
+  "基金": [...],
+  "债券": [...]
+}</pre>
+        </div>
+      </div>
+
+      <!-- 2. preciousMetalRecords -->
+      <div class="table-section">
+        <h2 class="section-title">2️⃣ 贵金属记录表 (preciousMetalRecords)</h2>
+        <div class="storage-key">localStorage 键: preciousMetalRecords</div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>字段名</th>
+              <th>类型</th>
+              <th>必填</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>id</td>
+              <td><span class="field-type type-string">string</span></td>
+              <td><span class="required">✓ 必填</span></td>
+              <td>唯一标识符</td>
+            </tr>
+            <tr>
+              <td>date</td>
+              <td><span class="field-type type-string">string</span></td>
+              <td><span class="required">✓ 必填</span></td>
+              <td>购买月份 (YYYY-MM)</td>
+            </tr>
+            <tr>
+              <td>metalType</td>
+              <td><span class="field-type type-string">string</span></td>
+              <td><span class="required">✓ 必填</span></td>
+              <td>贵金属类型（分组键）</td>
+            </tr>
+            <tr>
+              <td>grams</td>
+              <td><span class="field-type type-number">number</span></td>
+              <td><span class="required">✓ 必填</span></td>
+              <td>购买克数</td>
+            </tr>
+            <tr>
+              <td>pricePerGram</td>
+              <td><span class="field-type type-number">number</span></td>
+              <td><span class="required">✓ 必填</span></td>
+              <td>每克购买价格</td>
+            </tr>
+            <tr>
+              <td>averagePrice</td>
+              <td><span class="field-type type-number">number</span></td>
+              <td><span class="required">✓ 必填</span></td>
+              <td>当月市场均价</td>
+            </tr>
+            <tr>
+              <td>note</td>
+              <td><span class="field-type type-string">string</span></td>
+              <td><span class="optional">✗ 可选</span></td>
+              <td>备注信息</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="example-box">
+          <div class="example-title">📝 数据示例</div>
+          <pre>{
+  "黄金": [
+    {
+      "id": "metal-1",
+      "date": "2024-01",
+      "metalType": "黄金",
+      "grams": 100,
+      "pricePerGram": 500,
+      "averagePrice": 520,
+      "note": "初次购买"
+    }
+  ],
+  "白银": [...],
+  "铂金": [],
+  "钯金": []
+}</pre>
+        </div>
+
+        <div class="formula">
+          💰 收益公式: 当月均价 × 当月累计克数 - 上月均价 × 上月累计克数 - 当月投资金额
+        </div>
+      </div>
+
+      <!-- 3. accounts -->
+      <div class="table-section">
+        <h2 class="section-title">3️⃣ 账户表 (accounts)</h2>
+        <div class="storage-key">localStorage 键: accounts</div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>字段名</th>
+              <th>类型</th>
+              <th>必填</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>name</td>
+              <td><span class="field-type type-string">string</span></td>
+              <td><span class="required">✓ 必填</span></td>
+              <td>账户名称（唯一）</td>
+            </tr>
+            <tr>
+              <td>icon</td>
+              <td><span class="field-type type-string">string</span></td>
+              <td><span class="required">✓ 必填</span></td>
+              <td>emoji图标</td>
+            </tr>
+            <tr>
+              <td>group</td>
+              <td><span class="field-type type-string">string</span></td>
+              <td><span class="optional">✗ 可选</span></td>
+              <td>分组ID（外键→accountGroups）</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="example-box">
+          <div class="example-title">📝 数据示例</div>
+          <pre>[
+  {
+    "name": "支付宝",
+    "icon": "💳",
+    "group": "group-payment"
+  },
+  {
+    "name": "银行卡",
+    "icon": "🏦",
+    "group": "group-bank"
+  }
+]</pre>
+        </div>
+      </div>
+
+      <!-- 4. accountGroups -->
+      <div class="table-section">
+        <h2 class="section-title">4️⃣ 账户分组表 (accountGroups)</h2>
+        <div class="storage-key">localStorage 键: accountGroups</div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>字段名</th>
+              <th>类型</th>
+              <th>必填</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>id</td>
+              <td><span class="field-type type-string">string</span></td>
+              <td><span class="required">✓ 必填</span></td>
+              <td>唯一标识符</td>
+            </tr>
+            <tr>
+              <td>name</td>
+              <td><span class="field-type type-string">string</span></td>
+              <td><span class="required">✓ 必填</span></td>
+              <td>分组名称</td>
+            </tr>
+            <tr>
+              <td>icon</td>
+              <td><span class="field-type type-string">string</span></td>
+              <td><span class="required">✓ 必填</span></td>
+              <td>emoji图标</td>
+            </tr>
+            <tr>
+              <td>color</td>
+              <td><span class="field-type type-string">string</span></td>
+              <td><span class="required">✓ 必填</span></td>
+              <td>颜色值（hex格式）</td>
+            </tr>
+            <tr>
+              <td>order</td>
+              <td><span class="field-type type-number">number</span></td>
+              <td><span class="required">✓ 必填</span></td>
+              <td>排序序号</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="example-box">
+          <div class="example-title">📝 数据示例</div>
+          <pre>[
+  {
+    "id": "default",
+    "name": "未分组",
+    "icon": "📁",
+    "color": "#9CA3AF",
+    "order": 0
+  },
+  {
+    "id": "group-bank",
+    "name": "银行卡",
+    "icon": "🏦",
+    "color": "#3B82F6",
+    "order": 1
+  }
+]</pre>
+        </div>
+      </div>
+
+      <!-- 5. monthlySpendingRecords -->
+      <div class="table-section">
+        <h2 class="section-title">5️⃣ 月度支出记录表 (monthlySpendingRecords)</h2>
+        <div class="storage-key">localStorage 键: monthlySpendingRecords</div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>字段名</th>
+              <th>类型</th>
+              <th>必填</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>id</td>
+              <td><span class="field-type type-string">string</span></td>
+              <td><span class="required">✓ 必填</span></td>
+              <td>唯一标识符</td>
+            </tr>
+            <tr>
+              <td>date</td>
+              <td><span class="field-type type-string">string</span></td>
+              <td><span class="required">✓ 必填</span></td>
+              <td>支出月份 (YYYY-MM)</td>
+            </tr>
+            <tr>
+              <td>amount</td>
+              <td><span class="field-type type-number">number</span></td>
+              <td><span class="required">✓ 必填</span></td>
+              <td>支出金额（人民币）</td>
+            </tr>
+            <tr>
+              <td>category</td>
+              <td><span class="field-type type-string">string</span></td>
+              <td><span class="required">✓ 必填</span></td>
+              <td>支出类别</td>
+            </tr>
+            <tr>
+              <td>note</td>
+              <td><span class="field-type type-string">string</span></td>
+              <td><span class="optional">✗ 可选</span></td>
+              <td>备注信息</td>
+            </tr>
+            <tr>
+              <td>createdAt</td>
+              <td><span class="field-type type-string">string</span></td>
+              <td><span class="required">✓ 必填</span></td>
+              <td>创建时间（ISO 8601）</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="example-box">
+          <div class="example-title">📝 支出类别</div>
+          <div>
+            <span class="badge badge-example">🍜 餐饮</span>
+            <span class="badge badge-example">🚗 交通</span>
+            <span class="badge badge-example">🛍️ 购物</span>
+            <span class="badge badge-example">🎮 娱乐</span>
+            <span class="badge badge-example">🏠 居住</span>
+            <span class="badge badge-example">💊 医疗</span>
+            <span class="badge badge-example">📚 教育</span>
+            <span class="badge badge-example">📝 其他</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 配置数据 -->
+      <div class="table-section">
+        <h2 class="section-title">⚙️ 配置数据</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>键名</th>
+              <th>类型</th>
+              <th>示例值</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>defaultAccount</td>
+              <td><span class="field-type type-string">string</span></td>
+              <td>"支付宝"</td>
+              <td>默认账户名称</td>
+            </tr>
+            <tr>
+              <td>investmentFilterMonth</td>
+              <td><span class="field-type type-string">string</span></td>
+              <td>"2024-01"</td>
+              <td>投资筛选月份</td>
+            </tr>
+            <tr>
+              <td>metalFilterMonth</td>
+              <td><span class="field-type type-string">string</span></td>
+              <td>"2024-01"</td>
+              <td>贵金属筛选月份</td>
+            </tr>
+            <tr>
+              <td>accountGroupMigration</td>
+              <td><span class="field-type type-string">string</span></td>
+              <td>"true"</td>
+              <td>数据迁移标记</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 数据关系 -->
+      <div class="table-section">
+        <h2 class="section-title">🔗 数据关系图</h2>
+        <div class="example-box">
+          <div class="example-title">关系说明</div>
+          <pre>investmentRecords.account ───────→ accounts.name
+                                            │
+                                            └── accounts.group ───→ accountGroups.id
+
+investmentRecords.assetType ─────→ (分组键)
+preciousMetalRecords.metalType ──→ (分组键)</pre>
+        </div>
+      </div>
+
+      <!-- Mock数据统计 -->
+      <div class="table-section">
+        <h2 class="section-title">📈 Mock数据统计</h2>
+        <div class="stats">
+          <div class="stat-card">
+            <div class="stat-label">投资记录</div>
+            <div class="stat-value">18 笔</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">总投资额</div>
+            <div class="stat-value">¥32,900</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">当前价值</div>
+            <div class="stat-value">¥75,160</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">总收益</div>
+            <div class="stat-value">¥42,260</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>💾 数据存储: localStorage (JSON格式) | 📏 容量限制: 5-10MB | 🔄 备份方式: CSV导出</p>
+      <p style="margin-top: 10px;">⚠️ 注意: 数据存储在浏览器本地，清除浏览器数据会导致数据丢失</p>
+    </div>
+  </div>
+</body>
+</html>
