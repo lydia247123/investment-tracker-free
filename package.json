@@ -151,7 +151,8 @@
       "icon": "assets/icon.icns",
       "category": "public.app-category.finance",
       "darkModeSupport": true,
-      "gatekeeperAssess": false
+      "gatekeeperAssess": false,
+      "sign": null
     },
     "dmg": {
       "iconSize": 100,

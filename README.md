@@ -94,22 +94,33 @@ Download the latest version from the [Releases](https://github.com/lydia247123/i
 ```bash
 # Intel Mac
 Investment Tracker Free-1.0.0.dmg
-
-# Apple Silicon (M1/M2/M3)
-Investment Tracker Free-1.0.0-arm64.dmg
-
-# Or use ZIP version
 Investment Tracker Free-1.0.0-mac.zip
+
+# Apple Silicon (M1/M2/M3) ⭐ Recommended
+Investment Tracker Free-1.0.0-arm64.dmg
+Investment Tracker Free-1.0.0-arm64-mac.zip
 ```
 
-Installation steps:
+**Installation Method 1: Using ZIP (Recommended)**
+
+If the DMG shows "file is damaged" error:
+1. Download the **ZIP version** (e.g., `Investment Tracker Free-1.0.0-arm64-mac.zip`)
+2. Extract the ZIP file
+3. Double-click `Investment Tracker Free.app` to launch
+4. **If you see a security warning**:
+   - Right-click the app and select "Open"
+   - Click "Open" in the dialog
+5. Optionally: Drag the app to your Applications folder
+
+**Installation Method 2: Using DMG**
+
 1. Download the `.dmg` file
 2. **Right-click** the DMG and select "Open" (or use Ctrl+Click)
 3. Click "Open" in the security dialog
 4. Drag the app to Applications folder
 5. Launch from Launchpad or Applications folder
 
-> **Note**: You may see an "unverified developer" warning. This is normal for unsigned apps. Simply right-click and select "Open" to bypass this warning.
+> **Note**: Due to macOS security requirements, you may see security warnings. This is normal for unsigned apps. Using the ZIP version is recommended as it's more reliable.
 
 #### Windows
 
