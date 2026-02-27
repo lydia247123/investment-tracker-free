@@ -17,6 +17,9 @@ export default defineConfig({
       '@constants': path.resolve(__dirname, './src/constants'),
     },
   },
+  css: {
+    postcss: './config/postcss.config.js',
+  },
   server: {
     port: 5173,
   },

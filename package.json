@@ -27,11 +27,11 @@
     "pack": "electron-builder --dir",
     "install-deps": "npm install",
     "postinstall": "electron-builder install-app-deps",
-    "test": "vitest",
-    "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage",
-    "test:ui": "vitest --ui",
-    "test:watch": "vitest --watch"
+    "test": "vitest --config config/vitest.config.ts",
+    "test:run": "vitest run --config config/vitest.config.ts",
+    "test:coverage": "vitest run --coverage --config config/vitest.config.ts",
+    "test:ui": "vitest --ui --config config/vitest.config.ts",
+    "test:watch": "vitest watch --config config/vitest.config.ts"
   },
   "dependencies": {
     "electron-updater": "^4.6.5",

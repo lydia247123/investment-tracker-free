@@ -351,12 +351,17 @@ investment-tracker-free/
 │   ├── build.sh            # Build script for Linux/macOS
 │   ├── build.bat           # Build script for Windows
 │   ├── package-all-platforms.sh  # Build all platforms
-│   └── installer.nsh       # NSIS installer configuration
+│   ├── installer.nsh       # NSIS installer configuration
+│   └── quick-start.js      # Quick start helper script
+├── config/                   # Configuration files
+│   ├── postcss.config.js   # PostCSS configuration
+│   ├── tailwind.config.js  # Tailwind CSS configuration
+│   ├── vitest.config.ts    # Vitest test configuration
+│   └── vitest.setup.ts     # Vitest test setup
 ├── electron-builder.yml     # Build configuration
 ├── package.json            # Project configuration
 ├── tsconfig.json          # TypeScript configuration
-├── vite.config.ts         # Vite configuration
-└── tailwind.config.js     # Tailwind configuration
+└── vite.config.ts         # Vite configuration
 ```
 
 ### Available Scripts
