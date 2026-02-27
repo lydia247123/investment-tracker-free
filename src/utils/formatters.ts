@@ -10,12 +10,18 @@ export const formatPercentage = (value: number): string => {
 
 export const formatDate = (date: string): string => {
   const [year, month] = date.split('-');
-  const dateObj = new Date(parseInt(year), parseInt(month) - 1);
-  return dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  return `${monthNames[parseInt(month) - 1]} ${year}`;
 };
 
 export const formatMonth = (date: string): string => {
   const [year, month] = date.split('-');
-  const dateObj = new Date(parseInt(year), parseInt(month) - 1);
-  return dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  return `${monthNames[parseInt(month) - 1]} ${year}`;
 };
