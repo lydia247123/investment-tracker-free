@@ -60,9 +60,6 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({ selectedTypes, recor
                 Type
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Currency
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Month
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -93,20 +90,6 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({ selectedTypes, recor
                     {record.assetType}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
-                    record.currency === 'USD'
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'bg-red-100 text-red-700'
-                  }`}>
-                    {record.currency === 'USD' ? 'USD' : 'CNY'}
-                  </span>
-                  {record.currency === 'USD' && record.amountUSD && (
-                    <div className="text-xs text-gray-500 mt-1">
-                      ${record.amountUSD.toFixed(2)}
-                    </div>
-                  )}
-                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {formatMonth(record.date)}
                 </td>
@@ -115,11 +98,6 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({ selectedTypes, recor
                     <span className={`font-semibold ${record.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {formatCurrency(record.amount)}
                     </span>
-                    {record.currency === 'USD' && record.exchangeRate && (
-                      <span className="text-xs text-gray-500">
-                        Exchange Rate: {record.exchangeRate.toFixed(4)}
-                      </span>
-                    )}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-right">

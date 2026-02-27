@@ -1,8 +1,7 @@
-export const formatCurrency = (amount: number, currency: 'USD' | 'CNY' = 'USD'): string => {
+export const formatCurrency = (amount: number): string => {
   // Display as integer if whole number, otherwise show 2 decimal places
   const displayValue = Number(amount) % 1 === 0 ? amount : amount.toFixed(2);
-  const symbol = currency === 'USD' ? '$' : '¥';
-  return `${symbol}${displayValue}`;
+  return `$${displayValue}`;
 };
 
 export const formatPercentage = (value: number): string => {

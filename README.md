@@ -218,7 +218,7 @@ npm run build-all
 
 - Select asset type (stocks, funds, bonds, etc.)
 - Select investment month
-- Enter investment amount (supports USD and CNY)
+- Enter investment amount in USD
 - Enter current asset snapshot (optional)
 - Select account
 - Add notes (optional)
@@ -261,7 +261,7 @@ A: Use the "Export Data" feature to export CSV files as backups. We recommend re
 <details>
 <summary><b>Q: Which currencies are supported?</b></summary>
 
-A: Currently supports USD (US Dollar) and CNY (Chinese Yuan). For USD investments, you can set exchange rates for automatic conversion.
+A: Currently supports USD (US Dollar) only.
 </details>
 
 <details>

@@ -12,42 +12,26 @@ import {
 
 describe('formatters - 格式化函数', () => {
   describe('formatCurrency - 货币格式化', () => {
-    it('应正确格式化CNY整数金额', () => {
-      expect(formatCurrency(1000, 'CNY')).toBe('¥1000');
-      expect(formatCurrency(0, 'CNY')).toBe('¥0');
-      expect(formatCurrency(10000, 'CNY')).toBe('¥10000');
+    it('应正确格式化USD整数金额', () => {
+      expect(formatCurrency(100)).toBe('$100');
+      expect(formatCurrency(0)).toBe('$0');
+      expect(formatCurrency(10000)).toBe('$10000');
     });
 
-    it('应正确格式化CNY小数金额', () => {
-      expect(formatCurrency(1000.5, 'CNY')).toBe('¥1000.50');
-      expect(formatCurrency(1000.123, 'CNY')).toBe('¥1000.12');
-      expect(formatCurrency(1000.567, 'CNY')).toBe('¥1000.57');
-    });
-
-    it('应正确格式化USD金额', () => {
-      expect(formatCurrency(100, 'USD')).toBe('$100');
-      expect(formatCurrency(100.5, 'USD')).toBe('$100.50');
-      expect(formatCurrency(99.99, 'USD')).toBe('$99.99');
-    });
-
-    it('默认应使用CNY', () => {
-      expect(formatCurrency(1000)).toBe('¥1000');
-      expect(formatCurrency(1000.5)).toBe('¥1000.50');
+    it('应正确格式化USD小数金额', () => {
+      expect(formatCurrency(1000.5)).toBe('$1000.50');
+      expect(formatCurrency(1000.123)).toBe('$1000.12');
+      expect(formatCurrency(1000.567)).toBe('$1000.57');
     });
 
     it('应正确处理负数', () => {
-      expect(formatCurrency(-1000, 'CNY')).toBe('¥-1000');
-      expect(formatCurrency(-100.5, 'USD')).toBe('$-100.50');
-    });
-
-    it('应正确处理零', () => {
-      expect(formatCurrency(0, 'CNY')).toBe('¥0');
-      expect(formatCurrency(0, 'USD')).toBe('$0');
+      expect(formatCurrency(-1000)).toBe('$-1000');
+      expect(formatCurrency(-100.5)).toBe('$-100.50');
     });
 
     it('应正确处理大数值', () => {
-      expect(formatCurrency(1000000, 'CNY')).toBe('¥1000000');
-      expect(formatCurrency(1234567.89, 'USD')).toBe('$1234567.89');
+      expect(formatCurrency(1000000)).toBe('$1000000');
+      expect(formatCurrency(1234567.89)).toBe('$1234567.89');
     });
   });
 
@@ -137,13 +121,13 @@ describe('formatters - 格式化函数', () => {
 
   describe('边界条件和特殊情况', () => {
     it('formatCurrency应正确处理NaN', () => {
-      const result = formatCurrency(NaN, 'CNY');
-      expect(result).toBe('¥NaN');
+      const result = formatCurrency(NaN);
+      expect(result).toBe('$NaN');
     });
 
     it('formatCurrency应正确处理Infinity', () => {
-      expect(formatCurrency(Infinity, 'CNY')).toBe('¥Infinity');
-      expect(formatCurrency(-Infinity, 'USD')).toBe('$-Infinity');
+      expect(formatCurrency(Infinity)).toBe('$Infinity');
+      expect(formatCurrency(-Infinity)).toBe('$-Infinity');
     });
 
     it('formatPercentage应正确处理NaN', () => {
@@ -160,7 +144,7 @@ describe('formatters - 格式化函数', () => {
   describe('实际使用场景测试', () => {
     it('应正确格式化投资金额显示', () => {
       const amount = 12345.67;
-      expect(formatCurrency(amount, 'CNY')).toBe('¥12345.67');
+      expect(formatCurrency(amount)).toBe('$12345.67');
     });
 
     it('应正确格式化收益率显示', () => {
