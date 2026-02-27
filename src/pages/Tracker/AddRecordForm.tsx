@@ -55,30 +55,33 @@ export const AddRecordForm: React.FC<AddRecordFormProps> = ({ initialAssetType }
     }
   }, [accounts]);
 
-  // Generate month options (past 6 months to future 3 months)
+  // Generate month options dynamically based on existing data
   const generateMonthOptions = (): string[] => {
-    const months: string[] = [];
+    const monthSet = new Set<string>();
     const today = new Date();
     const currentYear = today.getFullYear();
     const currentMonth = today.getMonth() + 1;
 
-    // Generate past 6 months
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(currentYear, currentMonth - i - 1, 1);
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      months.push(`${year}-${month}`);
-    }
+    // 1. Add all months that have existing records
+    const allRecords = Object.values(recordsByType).flat();
+    allRecords.forEach(record => {
+      monthSet.add(record.date);
+    });
 
-    // Generate future 3 months
-    for (let i = 1; i <= 3; i++) {
+    // 2. Add current month
+    const currentMonthStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
+    monthSet.add(currentMonthStr);
+
+    // 3. Add future 6 months for advance planning
+    for (let i = 1; i <= 6; i++) {
       const date = new Date(currentYear, currentMonth + i - 1, 1);
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
-      months.push(`${year}-${month}`);
+      monthSet.add(`${year}-${month}`);
     }
 
-    return months;
+    // 4. Convert to array and sort (newest first)
+    return Array.from(monthSet).sort().reverse();
   };
 
   // When asset type switches, reset stock-related fields and input method
