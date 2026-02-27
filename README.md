@@ -514,9 +514,8 @@ SOFTWARE.
 
 ## 💬 Contact
 
-- **Issues**: [GitHub Issues](https://github.com/lydia247123/investment-tracker-free/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/lydia247123/investment-tracker-free/discussions)
-- **Email**: investment-tracker@example.com
+- **Email**: lydia247@163.com
+- **Repository**: [https://github.com/lydia247123/investment-tracker-free](https://github.com/lydia247123/investment-tracker-free)
 
 ---
 
