@@ -153,28 +153,14 @@ export const AddRecordForm: React.FC<AddRecordFormProps> = ({ initialAssetType }
         {/* Month selection */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Month *</label>
-          <div className="flex items-center gap-2">
-            <input
-              ref={monthPickerRef}
-              type="month"
-              value={month}
-              onChange={(e) => setMonth(e.target.value)}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              required
-            />
-            <button
-              type="button"
-              onClick={() => {
-                if (monthPickerRef.current) {
-                  monthPickerRef.current.showPicker();
-                }
-              }}
-              className="px-4 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg border border-blue-300 transition-colors font-medium"
-              title="Select month from calendar"
-            >
-              📅 Select Month
-            </button>
-          </div>
+          <input
+            ref={monthPickerRef}
+            type="month"
+            value={month}
+            onChange={(e) => setMonth(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            required
+          />
           {month && (
             <p className="mt-1 text-sm text-gray-600">
               Selected: {formatMonth(month)}
