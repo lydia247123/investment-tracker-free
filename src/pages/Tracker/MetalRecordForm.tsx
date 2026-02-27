@@ -38,23 +38,23 @@ export const MetalRecordForm: React.FC<MetalRecordFormProps> = ({ metalType }) =
     }
   }, [accounts]);
 
-  // Generate month options (past 12 months to future 12 months)
+  // Generate month options (past 6 months to future 3 months)
   const generateMonthOptions = (): string[] => {
     const months: string[] = [];
     const today = new Date();
     const currentYear = today.getFullYear();
     const currentMonth = today.getMonth() + 1;
 
-    // Generate past 12 months
-    for (let i = 12; i >= 0; i--) {
+    // Generate past 6 months
+    for (let i = 6; i >= 0; i--) {
       const date = new Date(currentYear, currentMonth - i - 1, 1);
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       months.push(`${year}-${month}`);
     }
 
-    // Generate future 12 months
-    for (let i = 1; i <= 12; i++) {
+    // Generate future 3 months
+    for (let i = 1; i <= 3; i++) {
       const date = new Date(currentYear, currentMonth + i - 1, 1);
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
