@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { usePreciousMetalStore } from '@store/preciousMetalStore';
 import { useAccountStore } from '@store/accountStore';
 import { PreciousMetalRecord, PreciousMetalType } from '@types/preciousMetal';
@@ -16,6 +16,7 @@ export const MetalRecordForm: React.FC<MetalRecordFormProps> = ({ metalType }) =
 
   const [selectedMetalType, setSelectedMetalType] = useState<PreciousMetalType>(metalType);
   const [month, setMonth] = useState('');
+  const monthPickerRef = useRef<HTMLInputElement>(null);
   const [selectedAccount, setSelectedAccount] = useState(accounts[0]?.name || '');
   const [grams, setGrams] = useState('');
   const [pricePerGram, setPricePerGram] = useState('');
@@ -163,19 +164,41 @@ export const MetalRecordForm: React.FC<MetalRecordFormProps> = ({ metalType }) =
         {/* Month selection */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Month *</label>
-          <select
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-            required
-          >
-            <option value="">Select Month</option>
-            {generateMonthOptions().map(monthOption => (
-              <option key={monthOption} value={monthOption}>
-                {formatMonth(monthOption)}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center gap-2">
+            <select
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              required
+            >
+              <option value="">Select Month</option>
+              {generateMonthOptions().map(monthOption => (
+                <option key={monthOption} value={monthOption}>
+                  {formatMonth(monthOption)}
+                </option>
+              ))}
+            </select>
+            <input
+              ref={monthPickerRef}
+              type="month"
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              className="sr-only"
+              aria-label="Select any month"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                if (monthPickerRef.current) {
+                  monthPickerRef.current.showPicker();
+                }
+              }}
+              className="px-3 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg border border-blue-300 transition-colors"
+              title="Select any month from calendar"
+            >
+              📅
+            </button>
+          </div>
         </div>
 
         {/* Purchase grams */}
