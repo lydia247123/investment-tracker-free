@@ -45,20 +45,9 @@ function createWindow() {
     // 确保开发者工具窗口在前台打开
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
-    // 生产模式：从 Resources 目录加载（不在 ASAR 中）
-    // 这样可以避免 ASAR 路径解析问题
-    const resourcesPath = process.resourcesPath;
-    const htmlPath = path.join(resourcesPath, 'dist-renderer', 'index.html');
-
-    // 修复：在 macOS Applications 文件夹下，强制设置工作目录到 Resources 
-    // 防止 App Translocation 导致的相对路径失效
-    if (process.platform === 'darwin' && !isDev) {
-      try {
-        process.chdir(resourcesPath);
-      } catch (err) {
-        // 忽略静默失败
-      }
-    }
+    // 生产模式：从 app.asar 内加载 index.html
+    // index.html 由 Vite 构建到项目根目录，然后被打包进 app.asar
+    const htmlPath = path.join(__dirname, '..', 'index.html');
 
     mainWindow.loadFile(htmlPath).then(() => {
       // 在调试模式下打开开发者工具
@@ -67,6 +56,8 @@ function createWindow() {
       }
     }).catch((error) => {
       console.error('❌ [MAIN] Failed to load HTML:', error);
+      console.error('❌ [MAIN] HTML path:', htmlPath);
+      console.error('❌ [MAIN] __dirname:', __dirname);
     });
   }
 

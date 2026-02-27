@@ -91,10 +91,6 @@
       {
         "from": "assets",
         "to": "assets"
-      },
-      {
-        "from": "dist-renderer",
-        "to": "dist-renderer"
       }
     ],
     "win": {
