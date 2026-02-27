@@ -10,7 +10,7 @@ A powerful, free desktop application for tracking your investment portfolio.
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9.3-blue.svg)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-5.4.21-646CFF.svg)](https://vitejs.dev/)
 
-**🌐 Visit our website:** [https://investment-tracker-website.vercel.app](https://investment-tracker-website.vercel.app)
+**🌐 Visit our website:** [https://lydia247123.github.io/investment-tracker-website](https://lydia247123.github.io/investment-tracker-website)
 
 </div>
 
