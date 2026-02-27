@@ -151,10 +151,7 @@
       "icon": "assets/icon.icns",
       "category": "public.app-category.finance",
       "darkModeSupport": true,
-      "hardenedRuntime": true,
-      "gatekeeperAssess": false,
-      "entitlements": "assets/entitlements.mac.plist",
-      "entitlementsInherit": "assets/entitlements.mac.plist"
+      "gatekeeperAssess": false
     },
     "dmg": {
       "iconSize": 100,

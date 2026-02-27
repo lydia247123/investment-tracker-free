@@ -104,8 +104,12 @@ Investment Tracker Free-1.0.0-mac.zip
 
 Installation steps:
 1. Download the `.dmg` file
-2. Open and drag the app to Applications folder
-3. Launch from Launchpad or Applications folder
+2. **Right-click** the DMG and select "Open" (or use Ctrl+Click)
+3. Click "Open" in the security dialog
+4. Drag the app to Applications folder
+5. Launch from Launchpad or Applications folder
+
+> **Note**: You may see an "unverified developer" warning. This is normal for unsigned apps. Simply right-click and select "Open" to bypass this warning.
 
 #### Windows
 
