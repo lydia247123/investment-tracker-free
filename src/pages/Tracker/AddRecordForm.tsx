@@ -56,35 +56,6 @@ export const AddRecordForm: React.FC<AddRecordFormProps> = ({ initialAssetType }
     }
   }, [accounts]);
 
-  // Generate month options dynamically based on existing data
-  const generateMonthOptions = (): string[] => {
-    const monthSet = new Set<string>();
-    const today = new Date();
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth() + 1;
-
-    // 1. Add all months that have existing records
-    const allRecords = Object.values(recordsByType).flat();
-    allRecords.forEach(record => {
-      monthSet.add(record.date);
-    });
-
-    // 2. Add current month
-    const currentMonthStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
-    monthSet.add(currentMonthStr);
-
-    // 3. Add future 6 months for advance planning
-    for (let i = 1; i <= 6; i++) {
-      const date = new Date(currentYear, currentMonth + i - 1, 1);
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      monthSet.add(`${year}-${month}`);
-    }
-
-    // 4. Convert to array and sort (newest first)
-    return Array.from(monthSet).sort().reverse();
-  };
-
   // When asset type switches, reset stock-related fields and input method
   useEffect(() => {
     if (selectedAssetType !== 'Stocks') {
@@ -183,26 +154,13 @@ export const AddRecordForm: React.FC<AddRecordFormProps> = ({ initialAssetType }
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Month *</label>
           <div className="flex items-center gap-2">
-            <select
-              value={month}
-              onChange={(e) => setMonth(e.target.value)}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              required
-            >
-              <option value="">Select Month</option>
-              {generateMonthOptions().map(monthOption => (
-                <option key={monthOption} value={monthOption}>
-                  {formatMonth(monthOption)}
-                </option>
-              ))}
-            </select>
             <input
               ref={monthPickerRef}
               type="month"
               value={month}
               onChange={(e) => setMonth(e.target.value)}
-              className="sr-only"
-              aria-label="Select any month"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              required
             />
             <button
               type="button"
@@ -211,12 +169,17 @@ export const AddRecordForm: React.FC<AddRecordFormProps> = ({ initialAssetType }
                   monthPickerRef.current.showPicker();
                 }
               }}
-              className="px-3 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg border border-blue-300 transition-colors"
-              title="Select any month from calendar"
+              className="px-4 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg border border-blue-300 transition-colors font-medium"
+              title="Select month from calendar"
             >
-              📅
+              📅 Select Month
             </button>
           </div>
+          {month && (
+            <p className="mt-1 text-sm text-gray-600">
+              Selected: {formatMonth(month)}
+            </p>
+          )}
         </div>
 
         {/* Stock-specific: input method selection */}
