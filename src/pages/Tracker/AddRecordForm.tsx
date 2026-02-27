@@ -3,6 +3,7 @@ import { useInvestmentStore } from '@store/investmentStore';
 import { useAccountStore } from '@store/accountStore';
 import { InvestmentRecord } from '@types/investment';
 import { calculateMaturityDate } from '@utils/timeDepositCalculations';
+import { formatMonth } from '@utils/formatters';
 
 const DEFAULT_ASSET_TYPES = ['Stocks', 'Funds', 'Bonds', 'Time Deposits', 'Others'] as const;
 
@@ -53,6 +54,32 @@ export const AddRecordForm: React.FC<AddRecordFormProps> = ({ initialAssetType }
       setSelectedAccount(accounts[0].name);
     }
   }, [accounts]);
+
+  // Generate month options (past 12 months to future 12 months)
+  const generateMonthOptions = (): string[] => {
+    const months: string[] = [];
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth() + 1;
+
+    // Generate past 12 months
+    for (let i = 12; i >= 0; i--) {
+      const date = new Date(currentYear, currentMonth - i - 1, 1);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      months.push(`${year}-${month}`);
+    }
+
+    // Generate future 12 months
+    for (let i = 1; i <= 12; i++) {
+      const date = new Date(currentYear, currentMonth + i - 1, 1);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      months.push(`${year}-${month}`);
+    }
+
+    return months;
+  };
 
   // When asset type switches, reset stock-related fields and input method
   useEffect(() => {
@@ -151,13 +178,19 @@ export const AddRecordForm: React.FC<AddRecordFormProps> = ({ initialAssetType }
         {/* Month selection */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Month *</label>
-          <input
-            type="month"
+          <select
             value={month}
             onChange={(e) => setMonth(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
             required
-          />
+          >
+            <option value="">Select Month</option>
+            {generateMonthOptions().map(monthOption => (
+              <option key={monthOption} value={monthOption}>
+                {formatMonth(monthOption)}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Stock-specific: input method selection */}
