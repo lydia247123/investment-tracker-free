@@ -342,6 +342,16 @@ investment-tracker-free/
 ├── assets/                   # Static assets
 │   ├── icon.png             # App icon
 │   └── icon.ico/.icns       # Platform-specific icons
+├── docs/                     # Developer documentation
+│   ├── BUILD.md            # Build instructions
+│   ├── DEBUG_GUIDE.md      # Debugging guide
+│   ├── DATA_FORMAT.md      # Data format documentation
+│   └── CLAUDE.md           # Claude Code instructions
+├── scripts/                  # Build and deployment scripts
+│   ├── build.sh            # Build script for Linux/macOS
+│   ├── build.bat           # Build script for Windows
+│   ├── package-all-platforms.sh  # Build all platforms
+│   └── installer.nsh       # NSIS installer configuration
 ├── electron-builder.yml     # Build configuration
 ├── package.json            # Project configuration
 ├── tsconfig.json          # TypeScript configuration

@@ -129,7 +129,7 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Investment Tracker Free",
-      "include": "installer.nsh"
+      "include": "scripts/installer.nsh"
     },
     "mac": {
       "target": [
