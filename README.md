@@ -106,10 +106,11 @@ Investment Tracker Free-1.0.0-arm64-mac.zip
 If the DMG shows "file is damaged" error:
 1. Download the **ZIP version** (e.g., `Investment Tracker Free-1.0.0-arm64-mac.zip`)
 2. Extract the ZIP file
-3. Double-click `Investment Tracker Free.app` to launch
-4. **If you see a security warning**:
-   - Right-click the app and select "Open"
-   - Click "Open" in the dialog
+3. **Important**: Open Terminal and run:
+   ```bash
+   xattr -cr ~/Downloads/Investment\ Tracker\ Free.app
+   ```
+4. Double-click `Investment Tracker Free.app` to launch
 5. Optionally: Drag the app to your Applications folder
 
 **Installation Method 2: Using DMG**
@@ -118,9 +119,13 @@ If the DMG shows "file is damaged" error:
 2. **Right-click** the DMG and select "Open" (or use Ctrl+Click)
 3. Click "Open" in the security dialog
 4. Drag the app to Applications folder
-5. Launch from Launchpad or Applications folder
+5. Open Terminal and run:
+   ```bash
+   xattr -cr /Applications/Investment\ Tracker\ Free.app
+   ```
+6. Launch from Applications folder
 
-> **Note**: Due to macOS security requirements, you may see security warnings. This is normal for unsigned apps. Using the ZIP version is recommended as it's more reliable.
+> **Note**: Due to macOS security requirements, you MUST run the `xattr -cr` command to remove the quarantine flag before launching the app. This is normal for unsigned apps. See [macOS Installation Guide](docs/macos-installation-guide.md) for detailed instructions.
 
 #### Windows
 

@@ -152,8 +152,20 @@
       "category": "public.app-category.finance",
       "darkModeSupport": true,
       "gatekeeperAssess": false,
-      "sign": null
+      "sign": null,
+      "extendInfo": {
+        "NSAppleScriptEnabled": false
+      },
+      "protocols": [
+        {
+          "name": "Investment Tracker Free",
+          "schemes": [
+            "investment-tracker"
+          ]
+        }
+      ]
     },
+    "afterPack": "scripts/afterPack.js",
     "dmg": {
       "iconSize": 100,
       "contents": [
