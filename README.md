@@ -172,7 +172,7 @@ cd investment-tracker-free
 npm install
 
 # 3. Run in development mode
-npm run dev
+npm run electron:dev
 
 # 4. Build for current platform
 npm run build
@@ -316,7 +316,7 @@ cd investment-tracker-free
 npm install
 
 # Start development server
-npm run dev
+npm run electron:dev
 ```
 
 Development mode will automatically:
@@ -388,7 +388,8 @@ investment-tracker-free/
 
 ```bash
 # Development
-npm run dev              # Start development mode
+npm run electron:dev     # Start development mode (Vite + Electron)
+npm run dev              # Start Electron only (requires Vite running separately)
 npm run dev:debug        # Start development mode with debugging
 
 # Build
