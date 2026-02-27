@@ -45,9 +45,9 @@ function createWindow() {
     // 确保开发者工具窗口在前台打开
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
-    // 生产模式：从 app.asar 内加载 index.html
-    // index.html 由 Vite 构建到项目根目录，然后被打包进 app.asar
-    const htmlPath = path.join(__dirname, '..', 'index.html');
+    // 生产模式：从 app.asar 内加载构建后的 index.html
+    // Vite 构建输出到 dist-renderer 目录，然后被打包进 app.asar
+    const htmlPath = path.join(__dirname, '..', 'dist-renderer', 'index.html');
 
     mainWindow.loadFile(htmlPath).then(() => {
       // 在调试模式下打开开发者工具
