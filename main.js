@@ -45,9 +45,20 @@ function createWindow() {
     // 确保开发者工具窗口在前台打开
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
-    // 生产模式：从 app.asar 内加载构建后的 index.html
-    // Vite 构建输出到 dist-renderer 目录，然后被打包进 app.asar
-    const htmlPath = path.join(__dirname, '..', 'dist-renderer', 'index.html');
+    // 生产模式：从 Resources 目录加载构建后的 index.html
+    // dist-renderer 通过 extraResources 复制到 Resources
+    const resourcesPath = process.resourcesPath;
+    const htmlPath = path.join(resourcesPath, 'dist-renderer', 'index.html');
+
+    // 修复：在 macOS 上，设置工作目录到 Resources
+    // 防止 App Translocation 导致的相对路径失效
+    if (process.platform === 'darwin') {
+      try {
+        process.chdir(resourcesPath);
+      } catch (err) {
+        console.warn('[MAIN] Could not change working directory:', err.message);
+      }
+    }
 
     mainWindow.loadFile(htmlPath).then(() => {
       // 在调试模式下打开开发者工具
@@ -57,7 +68,8 @@ function createWindow() {
     }).catch((error) => {
       console.error('❌ [MAIN] Failed to load HTML:', error);
       console.error('❌ [MAIN] HTML path:', htmlPath);
-      console.error('❌ [MAIN] __dirname:', __dirname);
+      console.error('❌ [MAIN] resourcesPath:', resourcesPath);
+      console.error('❌ [MAIN] cwd:', process.cwd());
     });
   }
 
